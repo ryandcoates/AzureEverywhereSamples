@@ -43,7 +43,7 @@ function New-epAzureVM {
 
     # Create a virtual machine configuration
     $vmConfig = New-AzureRmVMConfig -VMName $VMName -VMSize Standard_DS2 | `
-    Set-AzureRmVMOperatingSystem -Windows -ComputerName $VMName -Credential $cred | `
+    Set-AzureRmVMOperatingSystem -Windows -ComputerName $VMName -Credential $Credential | `
     Set-AzureRmVMSourceImage -PublisherName MicrosoftWindowsServer `
                             -Offer WindowsServer `
                             -Skus $SKU `
