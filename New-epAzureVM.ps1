@@ -27,13 +27,14 @@ function New-epAzureVM {
     )
 }
 #>
-#If ($ResourceGroup -eq $null){}
-    $ResourceGroup = "Test2"
 
 #If ($Location -eq $null){}
     $Location = "westus"
+
+#If ($ResourceGroup -eq $null){}
+    $ResourceGroup = (New-AzureRmResourceGroup Test3 -location $Location).ResourceGroupName
     `
-$VMName = "TestVM2"
+$VMName = "TestVM3"
 $NicName = $VMName +"-NIC0"
 $vnet = Get-AzureRMVirtualNetwork -ResourceGroupName "TestNetworkRG" -name "TestNetwork"
 $cred = Get-Credential
@@ -42,8 +43,6 @@ $cred = Get-Credential
 $nic = New-AzureRmNetworkInterface -Name $NicName -ResourceGroupName $ResourceGroup -Location $Location `
 -SubnetId $vnet.Subnets[0].Id
 
-# Define a credential object
-
 # Create a virtual machine configuration
 $vmConfig = New-AzureRmVMConfig -VMName $VMName -VMSize Standard_DS2 | `
 Set-AzureRmVMOperatingSystem -Windows -ComputerName $VMName -Credential $cred | `
@@ -51,7 +50,8 @@ Set-AzureRmVMSourceImage -PublisherName MicrosoftWindowsServer `
                         -Offer WindowsServer `
                         -Skus 2016-Datacenter `
                         -Version latest | `
-Add-AzureRmVMNetworkInterface -Id $nic.Id
+Add-AzureRmVMNetworkInterface -Id $nic.Id | `
+Set-AzureRMVMBootDiagnostics -Disable
 
 New-AzureRmVM -ResourceGroupName $ResourceGroup -Location $Location -VM $vmConfig
 
