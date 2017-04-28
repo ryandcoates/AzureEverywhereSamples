@@ -9,8 +9,8 @@ function New-epAzureVM {
         [String]
         $Location = "westus",
 
-        [Parameter(Mandatory=$True)]
-        [String]
+        [Parameter(Mandatory=$True, ValueFromPipeline=$True)]
+        [String[]]
         $VMName,
 
         [Parameter()]
@@ -22,35 +22,46 @@ function New-epAzureVM {
         [Microsoft.Azure.Commands.Network.Models.PSVirtualNetwork]
         $VirtualNetwork,
 
-        [Parameter(Mandatory=$True)]
+        [Parameter()]
         [PSCredential]$Credential
     )
 
+    PROCESS{
+        ForEach ($vm in $vmname){
+            If (!($ResourceGroup)){
+                $ResourceGroup = (New-AzureRmResourceGroup $vm -location $Location).ResourceGroupName
+            } else {
+                $ResourceGroup = (New-AzureRMResourceGroup $ResourceGroup -Location $Location).ResourceGroupName
+            }
 
-    If (!($ResourceGroup)){
-        $ResourceGroup = (New-AzureRmResourceGroup $VMName -location $Location).ResourceGroupName
-    } else {
-        $ResourceGroup = (New-AzureRMResourceGroup $ResourceGroup -Location $Location).ResourceGroupName
+    
+            If (!($Credential)){
+                $Credential = Get-Credential -Message "Provide Credentials for the new servers local admin account"
+                }
+
+            If (!($VirtualNetwork)){
+        
+                }
+
+            $NicName = $VM +"-NIC0"
+            #$vnet = Get-AzureRMVirtualNetwork -ResourceGroupName "TestNetworkRG" -name "TestNetwork"
+            #$cred = Get-Credential
+
+            # Create a virtual network card and associate with public IP address and NSG
+            $nic = New-AzureRmNetworkInterface -Name $NicName -ResourceGroupName $ResourceGroup -Location $Location `
+            -SubnetId $vnet.Subnets[0].Id
+
+            # Create a virtual machine configuration
+            $vmConfig = New-AzureRmVMConfig -VMName $vm -VMSize Standard_DS2 | `
+            Set-AzureRmVMOperatingSystem -Windows -ComputerName $vm -Credential $Credential | `
+            Set-AzureRmVMSourceImage -PublisherName MicrosoftWindowsServer `
+                                    -Offer WindowsServer `
+                                    -Skus $SKU `
+                                    -Version latest | `
+            Add-AzureRmVMNetworkInterface -Id $nic.Id | `
+            Set-AzureRMVMBootDiagnostics -Disable
+
+            New-AzureRmVM -ResourceGroupName $ResourceGroup -Location $Location -VM $vmConfig
+        }
     }
-
-    $NicName = $VMName +"-NIC0"
-    #$vnet = Get-AzureRMVirtualNetwork -ResourceGroupName "TestNetworkRG" -name "TestNetwork"
-    #$cred = Get-Credential
-
-    # Create a virtual network card and associate with public IP address and NSG
-    $nic = New-AzureRmNetworkInterface -Name $NicName -ResourceGroupName $ResourceGroup -Location $Location `
-    -SubnetId $vnet.Subnets[0].Id
-
-    # Create a virtual machine configuration
-    $vmConfig = New-AzureRmVMConfig -VMName $VMName -VMSize Standard_DS2 | `
-    Set-AzureRmVMOperatingSystem -Windows -ComputerName $VMName -Credential $Credential | `
-    Set-AzureRmVMSourceImage -PublisherName MicrosoftWindowsServer `
-                            -Offer WindowsServer `
-                            -Skus $SKU `
-                            -Version latest | `
-    Add-AzureRmVMNetworkInterface -Id $nic.Id | `
-    Set-AzureRMVMBootDiagnostics -Disable
-
-    New-AzureRmVM -ResourceGroupName $ResourceGroup -Location $Location -VM $vmConfig
-
 }
