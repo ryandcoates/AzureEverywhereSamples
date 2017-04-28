@@ -1,7 +1,7 @@
 function New-epAzureVM {
     [CmdletBinding()]
     Param(
-        [Parameter()]
+        [Parameter(Mandatory=$True)]
         [String]
         $ResourceGroup,
         
